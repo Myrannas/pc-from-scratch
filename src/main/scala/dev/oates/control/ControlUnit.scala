@@ -6,15 +6,16 @@ import chisel3.util.{Fill, is}
 import dev.oates.alu.AluCode
 
 /**
- * Instruction formats
- *
- * [regB] [regA] [regW] [op]
- * [constant|constant] [regW] [op]
- *
- * @param registers The register count
- * @param width     The width of data buses
- */
-class ControlUnit(registers: Int, width: Int, debug: Boolean = false) extends Module {
+  * Instruction formats
+  *
+  * [regB] [regA] [regW] [op]
+  * [constant|constant] [regW] [op]
+  *
+  * @param registers The register count
+  * @param width     The width of data buses
+  */
+class ControlUnit(registers: Int, width: Int, debug: Boolean = false)
+    extends Module {
   private val registersWidth = log2Ceil(registers)
   private val opsWidth = OpCode.getWidth
   private val pcRegister = (registers - 1).U
@@ -40,8 +41,10 @@ class ControlUnit(registers: Int, width: Int, debug: Boolean = false) extends Mo
 
   val regC = io.instruction(opsWidth + registersWidth - 1, opsWidth)
   io.regWrite := regC
-  io.regReadA := io.instruction(opsWidth + registersWidth * 2 - 1, opsWidth + registersWidth)
-  io.regReadB := io.instruction(opsWidth + registersWidth * 3 - 1, opsWidth + registersWidth * 2)
+  io.regReadA := io.instruction(opsWidth + registersWidth * 2 - 1,
+                                opsWidth + registersWidth)
+  io.regReadB := io.instruction(opsWidth + registersWidth * 3 - 1,
+                                opsWidth + registersWidth * 2)
 
   io.portWriteE := false.B
   io.regWriteE := false.B
@@ -49,7 +52,7 @@ class ControlUnit(registers: Int, width: Int, debug: Boolean = false) extends Mo
   io.aluOp := AluCode.noop
   io.regBConstant := false.B
 
-  switch (OpCode(op)) {
+  switch(OpCode(op)) {
     is(OpCode.add) {
       io.regWriteE := true.B
       io.aluOp := AluCode.add
@@ -135,7 +138,8 @@ class ControlUnit(registers: Int, width: Int, debug: Boolean = false) extends Mo
     printf(p"instruction [${Hexadecimal(io.instruction)}]\n" +
       p"op [${op}] constant [${Hexadecimal(io.constant)}] " +
       p"regs [${Hexadecimal(io.regReadB)}, ${Hexadecimal(io.regReadA)}, ${Hexadecimal(io.regWrite)}] \n" +
-      p"flags [Z ${Binary(zeroN)}, RWE ${Binary(io.regWriteE)}, PWE ${Binary(io.portWriteE)} RBC ${Binary(io.regBConstant)}]\n")
+      p"flags [Z ${Binary(zeroN)}, RWE ${Binary(io.regWriteE)}, PWE ${Binary(
+        io.portWriteE)} RBC ${Binary(io.regBConstant)}]\n")
   }
 
   def extendSign(input: UInt, toWidth: Int): UInt = {

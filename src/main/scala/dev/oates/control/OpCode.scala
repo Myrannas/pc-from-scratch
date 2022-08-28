@@ -17,7 +17,11 @@ object OpCode extends ChiselEnum {
   val bz = Value(10.U)
   val bnz = Value(11.U)
 
-  def encode3(registersWidth: Int, instruction: OpCode.Type, registerA: Int, registerB: Int, registerC: Int): UInt = {
+  def encode3(registersWidth: Int,
+              instruction: OpCode.Type,
+              registerA: Int,
+              registerB: Int,
+              registerC: Int): UInt = {
     val instructionCode = instruction.litValue.toInt
 
     val maxRegisterValue = math.pow(2, registersWidth)
@@ -39,19 +43,22 @@ object OpCode extends ChiselEnum {
   }
 
   /**
-   * Encode a 1 register + constant instruction
-   *
-   * Format:
-   *
-   * OpCode | Reg | Constant Double
-   *
-   * @param registersWidth
-   * @param instruction
-   * @param registerA
-   * @param value
-   * @return
-   */
-  def encode1C(registersWidth: Int, instruction: OpCode.Type, registerA: Int, value: Int): UInt = {
+    * Encode a 1 register + constant instruction
+    *
+    * Format:
+    *
+    * OpCode | Reg | Constant Double
+    *
+    * @param registersWidth
+    * @param instruction
+    * @param registerA
+    * @param value
+    * @return
+    */
+  def encode1C(registersWidth: Int,
+               instruction: OpCode.Type,
+               registerA: Int,
+               value: Int): UInt = {
     val instructionCode = instruction.litValue.toInt
 
     val maxRegisterValue = math.pow(2, registersWidth)
@@ -70,19 +77,21 @@ object OpCode extends ChiselEnum {
   }
 
   /**
-   * Encode a 1 register + constant instruction
-   *
-   * Format:
-   *
-   * OpCode | Reg | Constant Double
-   *
-   * @param registersWidth
-   * @param instruction
-   * @param registerA
-   * @param value
-   * @return
-   */
-  def encodeC(registersWidth: Int, instruction: OpCode.Type, value: Int): UInt = {
+    * Encode a 1 register + constant instruction
+    *
+    * Format:
+    *
+    * OpCode | Reg | Constant Double
+    *
+    * @param registersWidth
+    * @param instruction
+    * @param registerA
+    * @param value
+    * @return
+    */
+  def encodeC(registersWidth: Int,
+              instruction: OpCode.Type,
+              value: Int): UInt = {
     val instructionCode = instruction.litValue.toInt
 
     val maxConstantValue = math.pow(2, registersWidth * 3)
@@ -99,19 +108,22 @@ object OpCode extends ChiselEnum {
   }
 
   /**
-   * Encode a 1 register + constant instruction
-   *
-   * Format:
-   *
-   * OpCode | Reg | Constant Double
-   *
-   * @param registersWidth
-   * @param instruction
-   * @param registerA
-   * @param value
-   * @return
-   */
-  def encode2(registersWidth: Int, instruction: OpCode.Type, registerA: Int, registerB: Int): UInt = {
+    * Encode a 1 register + constant instruction
+    *
+    * Format:
+    *
+    * OpCode | Reg | Constant Double
+    *
+    * @param registersWidth
+    * @param instruction
+    * @param registerA
+    * @param value
+    * @return
+    */
+  def encode2(registersWidth: Int,
+              instruction: OpCode.Type,
+              registerA: Int,
+              registerB: Int): UInt = {
     val instructionCode = instruction.litValue.toInt
 
     val maxRegisterValue = math.pow(2, registersWidth)

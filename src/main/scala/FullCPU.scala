@@ -7,9 +7,13 @@ import dev.oates.compiler.Parser
 object Main extends App {
   println(
     new ChiselStage().emitVerilog(
-      CPU.program(16, 16, 4, debug = false, "program", {
-        cpu => new Parser(cpu).compile(
-          """
+      CPU.program(
+        16,
+        16,
+        4,
+        debug = false,
+        "program", { cpu =>
+          new Parser(cpu).compile("""
             | load r1 5
             |
             | start:
@@ -17,7 +21,8 @@ object Main extends App {
             | out o1 r2
             | jump start
             |""".stripMargin.trim)
-      }),
+        }
+      ),
       Array(
         "--emission-options=disableMemRandomization,disableRegisterRandomization",
         "--target-dir=./out"

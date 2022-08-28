@@ -3,8 +3,6 @@ package dev.oates.alu
 import chisel3._
 import chisel3.util.MuxLookup
 
-
-
 class ALU(width: Int, debug: Boolean = false) extends Module {
   var io = IO(new Bundle {
     val inA = Input(UInt(width.W))
@@ -44,6 +42,8 @@ class ALU(width: Int, debug: Boolean = false) extends Module {
   io.zero := result === 0.U
 
   if (debug) {
-    printf(p"ALU op [${Hexadecimal(io.op.asUInt)}] inA [${Hexadecimal(io.inA)}] inB [${Hexadecimal(io.inB)}] out [${Hexadecimal(io.out)}]\n")
+    printf(
+      p"ALU op [${Hexadecimal(io.op.asUInt)}] inA [${Hexadecimal(io.inA)}] inB [${Hexadecimal(
+        io.inB)}] out [${Hexadecimal(io.out)}]\n")
   }
 }
