@@ -1,6 +1,6 @@
 package dev.oates.control
 
-import Chisel.{Cat, MuxLookup, log2Ceil, switch}
+import Chisel.{Cat, log2Ceil, switch}
 import chisel3._
 import chisel3.util.{Fill, is}
 import dev.oates.alu.AluCode

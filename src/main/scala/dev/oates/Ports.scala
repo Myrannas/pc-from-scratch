@@ -9,11 +9,10 @@ class Ports(ports: Int, width: Int) extends Module {
   require(isPow2(width), "The data width must be a power of 2")
 
   val io = IO(new Bundle {
-    val writeValue = Input(UInt(width.W))
-    val writeE = Input(Bool())
-    val writePortSelect = Input(UInt(log2Ceil(ports).W))
-
-    val outputPorts = Output(Vec(ports, UInt(width.W)))
+    val writeValue: UInt = Input(UInt(width.W))
+    val writeE: Bool = Input(Bool())
+    val writePortSelect: UInt = Input(UInt(log2Ceil(ports).W))
+    val outputPorts: Vec[UInt] = Output(Vec(ports, UInt(width.W)))
   })
 
   private val internalRegisters = Reg(Vec(ports, UInt(width.W)))

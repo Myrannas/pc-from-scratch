@@ -4,18 +4,18 @@ import chisel3._
 import chisel3.experimental.ChiselEnum
 
 object OpCode extends ChiselEnum {
-  val noop = Value(0.U)
-  val load = Value(1.U)
-  val add = Value(2.U)
-  val sub = Value(3.U)
-  val output = Value(4.U)
-  val jumpC = Value(5.U)
-  val and = Value(6.U)
-  val or = Value(7.U)
-  val not = Value(8.U)
-  val xor = Value(9.U)
-  val bz = Value(10.U)
-  val bnz = Value(11.U)
+  val noop: OpCode.Type = Value(0.U)
+  val load: OpCode.Type = Value(1.U)
+  val add: OpCode.Type = Value(2.U)
+  val sub: OpCode.Type = Value(3.U)
+  val output: OpCode.Type = Value(4.U)
+  val jumpC: OpCode.Type = Value(5.U)
+  val and: OpCode.Type = Value(6.U)
+  val or: OpCode.Type = Value(7.U)
+  val not: OpCode.Type = Value(8.U)
+  val xor: OpCode.Type = Value(9.U)
+  val bz: OpCode.Type = Value(10.U)
+  val bnz: OpCode.Type = Value(11.U)
 
   def encode3(registersWidth: Int,
               instruction: OpCode.Type,
@@ -25,17 +25,9 @@ object OpCode extends ChiselEnum {
     val instructionCode = instruction.litValue.toInt
 
     val maxRegisterValue = math.pow(2, registersWidth)
-    if (registerA >= maxRegisterValue) {
-      throw new Error(s"registerA > than allowed value of ${maxRegisterValue}")
-    }
-
-    if (registerB >= maxRegisterValue) {
-      throw new Error(s"registerB > than allowed value ${maxRegisterValue}")
-    }
-
-    if (registerC >= maxRegisterValue) {
-      throw new Error(s"registerC > than allowed value ${maxRegisterValue}")
-    }
+    require(registerA < maxRegisterValue, s"registerA > than allowed value of $maxRegisterValue")
+    require(registerB < maxRegisterValue, s"registerB > than allowed value of $maxRegisterValue")
+    require(registerC < maxRegisterValue, s"registerC > than allowed value of $maxRegisterValue")
 
     val iValue = (((((registerC << registersWidth) | registerB) << registersWidth) | registerA) << OpCode.getWidth) | instructionCode
 
@@ -62,14 +54,10 @@ object OpCode extends ChiselEnum {
     val instructionCode = instruction.litValue.toInt
 
     val maxRegisterValue = math.pow(2, registersWidth)
-    if (registerA >= maxRegisterValue) {
-      throw new Error(s"registerA > than allowed value of ${maxRegisterValue}")
-    }
+    require(registerA < maxRegisterValue, s"registerA > than allowed value of $maxRegisterValue")
 
     val maxConstantValue = math.pow(2, registersWidth * 2)
-    if (value >= maxConstantValue) {
-      throw new Error(s"constant > than allowed value of $maxConstantValue")
-    }
+    require(value < maxConstantValue, s"constant > than allowed value of $maxConstantValue")
 
     val iValue = (((value << registersWidth) | registerA) << OpCode.getWidth) | instructionCode
 
@@ -95,9 +83,7 @@ object OpCode extends ChiselEnum {
     val instructionCode = instruction.litValue.toInt
 
     val maxConstantValue = math.pow(2, registersWidth * 3)
-    if (value >= maxConstantValue) {
-      throw new Error(s"constant > than allowed value of $maxConstantValue")
-    }
+    require(value < maxConstantValue, s"constant >= than allowed value of $maxConstantValue")
 
     val mask = (1 << ((registersWidth * 3) + OpCode.getWidth)) - 1
     val iValue = (value << OpCode.getWidth) & mask | instructionCode
@@ -117,7 +103,6 @@ object OpCode extends ChiselEnum {
     * @param registersWidth
     * @param instruction
     * @param registerA
-    * @param value
     * @return
     */
   def encode2(registersWidth: Int,
@@ -127,13 +112,8 @@ object OpCode extends ChiselEnum {
     val instructionCode = instruction.litValue.toInt
 
     val maxRegisterValue = math.pow(2, registersWidth)
-    if (registerA >= maxRegisterValue) {
-      throw new Error(s"registerA > than allowed value of ${maxRegisterValue}")
-    }
-
-    if (registerB >= maxRegisterValue) {
-      throw new Error(s"registerB > than allowed value ${maxRegisterValue}")
-    }
+    require(registerA < maxRegisterValue, s"registerA > than allowed value of $maxRegisterValue")
+    require(registerB < maxRegisterValue, s"registerN > than allowed value of $maxRegisterValue")
 
     val iValue = (((registerB << registersWidth) | registerA) << OpCode.getWidth) | instructionCode
 
