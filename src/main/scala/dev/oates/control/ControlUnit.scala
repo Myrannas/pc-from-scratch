@@ -1,152 +1,110 @@
 package dev.oates.control
 
-import Chisel.{Cat, log2Ceil, switch}
+import Chisel.log2Ceil
 import chisel3._
-import chisel3.util.{Fill, is}
 import dev.oates.alu.AluCode
 
-/**
-  * Instruction formats
-  *
-  * [regB] [regA] [regW] [op]
-  * [constant|constant] [regW] [op]
-  *
-  * @param registers The register count
-  * @param width     The width of data buses
-  */
-class ControlUnit(registers: Int, width: Int, debug: Boolean = false)
-    extends Module {
-  private val registersWidth = log2Ceil(registers)
-  private val opsWidth = OpCode.getWidth
-  private val pcRegister = (registers - 1).U
+class ControlUnitBundle(registersWidth: Int, width: Int) extends Bundle {
+  val aluOp: AluCode.Type = AluCode()
+  val regReadA: UInt = UInt(registersWidth.W)
+  val regReadB: UInt = UInt(registersWidth.W)
+  val regWrite: UInt = UInt(registersWidth.W)
+  val regWriteE: Bool = Bool()
+  val portWriteE: Bool = Bool()
+  val branchZero: Bool = Bool()
+  val branchNZero: Bool = Bool()
+  val branchRelative: Bool = Bool()
 
-  var io = IO(new Bundle {
-    val instruction = Input(Bits((OpCode.getWidth + registersWidth * 3).W))
+  val constant: UInt = UInt(width.W)
+  val regBConstant: Bool = Bool()
+}
+
+object ControlUnitBundle {
+  def wire(registers: Int, width: Int) = {
+    val w = Wire(new ControlUnitBundle(registers, width))
+
+    w.regReadA := 0.U
+    w.regReadB := 0.U
+    w.regWrite := 0.U
+    w.regWriteE := false.B
+    w.portWriteE := false.B
+    w.constant := 0.U
+    w.regBConstant := false.B
+    w.branchZero := false.B
+    w.branchNZero := false.B
+    w.branchRelative := false.B
+    w.aluOp := AluCode.noop
+
+    w
+  }
+}
+
+class PipelinedControlUnit(registersCount: Int, width: Int, debug: Boolean = false) extends Module {
+  private val registersWidth = log2Ceil(registersCount)
+
+  val io = IO(new Bundle {
+    val instruction = Input(UInt((OpCode.getWidth + log2Ceil(registersCount) * 3).W))
     val zero = Input(Bool())
 
-    val aluOp = Output(AluCode())
     val regReadA = Output(UInt(registersWidth.W))
     val regReadB = Output(UInt(registersWidth.W))
+
+    val loopBackA0 = Output(Bool())
+    val loopBackB0 = Output(Bool())
+
+    val aluOp = Output(AluCode())
+    val constant = Output(UInt(width.W))
+    val regBConstant = Output(Bool())
+
     val regWrite = Output(UInt(registersWidth.W))
     val regWriteE = Output(Bool())
     val portWriteE = Output(Bool())
-
-    val constant = Output(UInt(width.W))
-    val regBConstant = Output(Bool())
+    val pcWriteE = Output(Bool())
+    val pcWriteRelativeE = Output(Bool())
   })
 
-  private val zeroN = Reg(Bool())
-  private val op = io.instruction(opsWidth - 1, 0)
-  zeroN := io.zero
+  private val controlUnit = Module(new DecodeUnit(registersCount, width, false))
+  private val stages = RegInit(VecInit(Seq.fill(3) { ControlUnitBundle.wire(registersWidth, width) }))
+  private val prevZero = RegNext(io.zero)
+  private val flush = Wire(Bool())
 
-  val regC = io.instruction(opsWidth + registersWidth - 1, opsWidth)
-  io.regWrite := regC
-  io.regReadA := io.instruction(opsWidth + registersWidth * 2 - 1,
-                                opsWidth + registersWidth)
-  io.regReadB := io.instruction(opsWidth + registersWidth * 3 - 1,
-                                opsWidth + registersWidth * 2)
-
-  io.portWriteE := false.B
-  io.regWriteE := false.B
-  io.constant := Cat(Seq(io.regReadB, io.regReadA))
-  io.aluOp := AluCode.noop
-  io.regBConstant := false.B
-
-  switch(OpCode(op)) {
-    is(OpCode.add) {
-      io.regWriteE := true.B
-      io.aluOp := AluCode.add
-      zeroN := io.zero
-    }
-
-    is(OpCode.sub) {
-      io.regWriteE := true.B
-      io.aluOp := AluCode.sub
-      zeroN := io.zero
-    }
-
-    is(OpCode.load) {
-      io.regWriteE := true.B
-      zeroN := io.zero
-      io.aluOp := AluCode.noop
-      io.regBConstant := true.B
-    }
-
-    is(OpCode.xor) {
-      io.regWriteE := true.B
-      io.aluOp := AluCode.xor
-      zeroN := io.zero
-    }
-
-    is(OpCode.not) {
-      io.regWriteE := true.B
-      io.aluOp := AluCode.not
-      zeroN := io.zero
-    }
-
-    is(OpCode.and) {
-      io.regWriteE := true.B
-      io.aluOp := AluCode.and
-      zeroN := io.zero
-    }
-
-    is(OpCode.or) {
-      io.regWriteE := true.B
-      io.aluOp := AluCode.or
-      zeroN := io.zero
-    }
-
-    is(OpCode.output) {
-      io.portWriteE := true.B
-      io.aluOp := AluCode.a
-    }
-
-    is(OpCode.jumpC) {
-      io.aluOp := AluCode.noop
-
-      io.regWriteE := true.B
-      io.regWrite := pcRegister
-      io.regBConstant := true.B
-
-      io.constant := Cat(Seq(io.regReadB, io.regReadA, regC))
-    }
-
-    is(OpCode.bz) {
-      io.aluOp := AluCode.add
-
-      io.regWriteE := zeroN === true.B
-      io.regWrite := pcRegister
-      io.regReadA := pcRegister
-      io.regBConstant := true.B
-
-      io.constant := extendSign(Cat(Seq(io.regReadB, io.regReadA, regC)), width)
-    }
-
-    is(OpCode.bnz) {
-      io.aluOp := AluCode.add
-
-      io.regWriteE := zeroN === false.B
-      io.regWrite := pcRegister
-      io.regReadA := pcRegister
-      io.regBConstant := true.B
-
-      io.constant := extendSign(Cat(Seq(io.regReadB, io.regReadA, regC)), width)
-    }
+  for (i <- 0 until stages.length - 1) {
+    stages(i + 1) := Mux(flush, ControlUnitBundle.wire(registersWidth, width), stages(i))
   }
+
+  controlUnit.io.instruction := io.instruction
+  stages(0) := controlUnit.io.decoded
+  io.regReadA := stages(0).regReadA
+  io.regReadB := stages(0).regReadB
+
+  io.aluOp := stages(1).aluOp
+  io.constant := stages(1).constant
+  io.regBConstant := stages(1).regBConstant
+
+  io.regWrite := stages(2).regWrite
+  io.regWriteE := stages(2).regWriteE
+  io.portWriteE := stages(2).portWriteE
+
+  io.loopBackA0 := stages(1).regReadA === stages(2).regWrite && stages(2).regWriteE === true.B
+  io.loopBackB0 := stages(1).regReadB === stages(2).regWrite && stages(2).regWriteE === true.B
+
+  io.pcWriteE := (stages(1).branchZero && prevZero) || (stages(1).branchNZero && !prevZero)
+  io.pcWriteRelativeE := stages(1).branchRelative
+
+  flush := io.pcWriteE
 
   if (debug) {
-    printf(p"instruction [${Hexadecimal(io.instruction)}]\n" +
-      p"op [${op}] constant [${Hexadecimal(io.constant)}] " +
-      p"regs [${Hexadecimal(io.regReadB)}, ${Hexadecimal(io.regReadA)}, ${Hexadecimal(io.regWrite)}] \n" +
-      p"flags [Z ${Binary(zeroN)}, RWE ${Binary(io.regWriteE)}, PWE ${Binary(
-        io.portWriteE)} RBC ${Binary(io.regBConstant)}]\n")
-  }
+    printf(p"Control Unit:\n")
 
-  def extendSign(input: UInt, toWidth: Int): UInt = {
-    require(toWidth > input.getWidth)
+    for (i <- 0 until stages.length) {
+      printf(p"\tStage $i: ${stages(i)}\n")
+    }
 
-    val signBit = input.head(1)
+    printf(p"\tZero [${Binary(prevZero)}]\n")
 
-    Cat(Fill(toWidth - input.getWidth, signBit), input)
+    when(flush) {
+      printf(p"\tFlushing control state\n")
+    }
+
   }
 }

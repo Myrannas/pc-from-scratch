@@ -4,11 +4,10 @@ import Chisel.log2Ceil
 import chisel3._
 import chisel3.util.experimental.loadMemoryFromFileInline
 import dev.oates.alu.ALU
-import dev.oates.control.{ControlUnit, OpCode}
+import dev.oates.control.{DecodeUnit, OpCode, PipelinedControlUnit}
 
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Paths}
-import javax.print.attribute.standard.Destination
 
 class CPU(
     registerCount: Int,
@@ -24,10 +23,11 @@ class CPU(
     val outputPorts = Output(Vec(ports, UInt(width.W)))
   })
 
-  private val registers = Module(new Registers(registerCount, width))
+  private val control = Module(new PipelinedControlUnit(registerCount, width, debug))
+  private val registers = Module(new Registers(registerCount, width, true))
   private val alu = Module(new ALU(width, debug))
-  private val controlUnit = Module(new ControlUnit(registerCount, width, debug))
   private val outputPorts = Module(new Ports(ports, width))
+  private val pc = Module(new PC(width, true))
 
   private val instructions =
     Mem(1024, UInt((OpCode.getWidth + log2Ceil(registerCount) * 3).W))
@@ -36,36 +36,35 @@ class CPU(
   }
 
   // ALU Input
-  alu.io.inA := registers.io.outA
-  alu.io.inB := registers.io.outB
-  alu.io.inC := controlUnit.io.constant
-  alu.io.op := controlUnit.io.aluOp
-  alu.io.constant := controlUnit.io.regBConstant
+  alu.io.inA := Mux(control.io.loopBackA0, RegNext(alu.io.out), RegNext(registers.io.outA))
+  alu.io.inB := Mux(control.io.loopBackB0, RegNext(alu.io.out), RegNext(registers.io.outB))
+  alu.io.inC := control.io.constant
+  alu.io.op := control.io.aluOp
+  alu.io.constant := control.io.regBConstant
 
   // Control Unit Input
-  controlUnit.io.instruction := instructions(registers.io.pc)
-  controlUnit.io.zero := alu.io.zero
+  control.io.instruction := instructions(pc.io.out)
+  control.io.zero := alu.io.zero
 
   // Output Ports
-  outputPorts.io.writeValue := alu.io.out
-  outputPorts.io.writeE := controlUnit.io.portWriteE
-  outputPorts.io.writePortSelect := controlUnit.io.regWrite
+  outputPorts.io.writeValue := RegNext(alu.io.out)
+  outputPorts.io.writeE := control.io.portWriteE
+  outputPorts.io.writePortSelect := control.io.regWrite
 
   //Registers Input
-  registers.io.in := alu.io.out
-  registers.io.outSelectA := controlUnit.io.regReadA
-  registers.io.outSelectB := controlUnit.io.regReadB
-  registers.io.inSelect := controlUnit.io.regWrite
-  registers.io.write := controlUnit.io.regWriteE
+  registers.io.in := RegNext(alu.io.out)
+  registers.io.outSelectA := control.io.regReadA
+  registers.io.outSelectB := control.io.regReadB
+  registers.io.inSelect := control.io.regWrite
+  registers.io.write := control.io.regWriteE
+
+  // PC
+  pc.io.write := control.io.pcWriteE
+  pc.io.in := control.io.constant
+  pc.io.writeRelative := control.io.pcWriteRelativeE
 
   // Outputs
   io.outputPorts := outputPorts.io.outputPorts
-
-  if (debug) {
-    //    printf(p"Control signals: ${controlUnit.io}\n")
-    //    printf(p"Registers: ${registers.io}\n")
-    printf(p"\nPC: [${Hexadecimal(registers.io.pc)}]\n")
-  }
 }
 
 object CPU {
@@ -76,8 +75,9 @@ object CPU {
               name: String,
               builder: (ProgramBuilder) => ProgramBuilder): CPU = {
     val registerWidth = log2Ceil(registerCount)
-    val intructions =
-      builder(ProgramBuilder(registerWidth, Array())).link().instructions.toSeq
+    val program = builder(ProgramBuilder(registerWidth, Array()))
+    val linkedProgram = program.link()
+    val intructions = linkedProgram.instructions.toSeq
     println(intructions, registerWidth)
     val memoryWidth = ((registerWidth * 3 + OpCode.getWidth) / 4).ceil.toInt
 

@@ -1,6 +1,6 @@
 import chisel3._
 import chisel3.stage.ChiselStage
-import dev.oates.control.{ControlUnit, OpCode}
+import dev.oates.control.{DecodeUnit, OpCode}
 import dev.oates.CPU
 import dev.oates.compiler.Parser
 

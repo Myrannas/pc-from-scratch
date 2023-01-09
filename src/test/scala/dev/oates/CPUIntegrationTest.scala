@@ -17,7 +17,7 @@ class CPUIntegrationTest extends AnyFlatSpec with ChiselScalatestTester {
           .output(1, 2)
     })) {
       c =>
-        c.clock.step(3)
+        c.clock.step(8)
         c.io.outputPorts(1).expect(10.U)
     }
   }
@@ -25,14 +25,17 @@ class CPUIntegrationTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "Can subtract values" in {
     test(CPU.program(4, 16, 4, true, "sub", {
       cpu =>
-        cpu
-          .load(0, 5)
-          .load(1, 3)
-          .sub(2, 0, 1)
-          .output(1, 2)
+        new Parser(cpu).compile(
+          """
+            | r0 = 5
+            | r1 = 3
+            |
+            | r2 = r0 - r1
+            | o1 = r2
+            |""".stripMargin.trim)
     })) {
       c =>
-        c.clock.step(4)
+        c.clock.step(8)
         c.io.outputPorts(1).expect(2.U)
     }
   }
@@ -42,16 +45,16 @@ class CPUIntegrationTest extends AnyFlatSpec with ChiselScalatestTester {
       cpu =>
         new Parser(cpu).compile(
           """
-            | load r1 5
+            | r1 = 5
             |
             | start:
-            | add r2 r2 r1
-            | out o1 r2
+            | r2 = r2 + r1
+            | o1 = r2
             | jump start
             |""".stripMargin.trim)
     })) {
       c =>
-        c.clock.step(10)
+        c.clock.step(18)
         c.io.outputPorts(1).expect(15.U)
     }
   }
@@ -59,18 +62,22 @@ class CPUIntegrationTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "Set branch on zero if bz is set" in {
     test(CPU.program(4, 16, 4, true, "branch", {
       cpu =>
-        cpu
-          .load(0, 5)
-          .load(1, 1)
-          .load(2, 15)
-          .sub(0, 0, 1)
-          .output(1, 0)
-          .bnz(-2)
-          .output(1, 2)
+        new Parser(cpu).compile(
+          """
+            | r0 = 1
+            | r1 = 0
+            |
+            | bz end
+            | o1 = r0
+            |
+            | end:
+            | o2 = r0
+            |""".stripMargin.trim)
     })) {
       c =>
-        c.clock.step(19)
-        c.io.outputPorts(1).expect(15.U)
+        c.clock.step(10)
+        c.io.outputPorts(1).expect(0.U)
+        c.io.outputPorts(2).expect(1.U)
     }
   }
 }

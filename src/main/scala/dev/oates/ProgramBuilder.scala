@@ -8,13 +8,6 @@ case class ProgramBuilder(registerWidth: Int,
                           labels: Map[String, Int] = Map(),
                           linkTasks: Array[ProgramBuilder => ProgramBuilder] =
                             Array()) {
-  def jump(address: Int): ProgramBuilder = ProgramBuilder(
-    registerWidth,
-    instructions :+ OpCode.encodeC(registerWidth, OpCode.jumpC, address),
-    labels,
-    linkTasks
-  )
-
   def jumpLabel(label: String): ProgramBuilder = {
     val offset = instructions.length
 
@@ -25,24 +18,39 @@ case class ProgramBuilder(registerWidth: Int,
       linkTasks :+ { (programBuilder: ProgramBuilder) =>
         programBuilder.replace(
           offset,
-          OpCode.encodeC(registerWidth, OpCode.jumpC, labels(label)))
+          OpCode.encodeC(registerWidth, OpCode.jumpC, programBuilder.labels(label)))
       }
     )
   }
 
-  def bz(offset: Int): ProgramBuilder = ProgramBuilder(
-    registerWidth,
-    instructions :+ OpCode.encodeC(registerWidth, OpCode.bz, offset),
-    labels,
-    linkTasks
-  )
+  def bz(label: String): ProgramBuilder = {
+    val instr = instructions.length
 
-  def bnz(offset: Int): ProgramBuilder = ProgramBuilder(
+    ProgramBuilder(
     registerWidth,
-    instructions :+ OpCode.encodeC(registerWidth, OpCode.bnz, offset),
+    instructions :+ OpCode.encodeC(registerWidth, OpCode.bz, 0),
     labels,
-    linkTasks
-  )
+    linkTasks :+ { (programBuilder: ProgramBuilder) =>
+      programBuilder.replace(
+        instr,
+        OpCode.encodeC(registerWidth, OpCode.bz, programBuilder.labels(label) - instr))
+    }
+  )}
+
+  def bnz(label: String): ProgramBuilder = {
+    val instr = instructions.length
+
+    ProgramBuilder(
+      registerWidth,
+      instructions :+ OpCode.encodeC(registerWidth, OpCode.bz, 0),
+      labels,
+      linkTasks :+ { (programBuilder: ProgramBuilder) =>
+        programBuilder.replace(
+          instr,
+          OpCode.encodeC(registerWidth, OpCode.bz, programBuilder.labels(label) - instr))
+      }
+    )
+  }
 
   def noop(): ProgramBuilder = ProgramBuilder(
     registerWidth,
@@ -81,6 +89,30 @@ case class ProgramBuilder(registerWidth: Int,
                                      destination,
                                      regA,
                                      regB),
+      labels,
+      linkTasks
+    )
+
+  def and(destination: Int, regA: Int, regB: Int): ProgramBuilder =
+    ProgramBuilder(
+      registerWidth,
+      instructions :+ OpCode.encode3(registerWidth,
+        OpCode.and,
+        destination,
+        regA,
+        regB),
+      labels,
+      linkTasks
+    )
+
+  def or(destination: Int, regA: Int, regB: Int): ProgramBuilder =
+    ProgramBuilder(
+      registerWidth,
+      instructions :+ OpCode.encode3(registerWidth,
+        OpCode.or,
+        destination,
+        regA,
+        regB),
       labels,
       linkTasks
     )

@@ -30,9 +30,9 @@ class RegisterTest extends AnyFlatSpec with ChiselScalatestTester {
 
   it should "outputs should follow inputs by one clock cycle" in {
     test(new Registers(4, 16)) { c =>
-      c.io.inSelect.poke(1.U)
+      c.io.inSelect.poke(0.U)
       c.io.outSelectA.poke(1.U)
-      c.io.outSelectB.poke(1.U)
+      c.io.outSelectB.poke(2.U)
       c.io.write.poke(true)
 
       for (x <- 1 to 5) {

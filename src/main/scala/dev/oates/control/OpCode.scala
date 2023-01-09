@@ -61,6 +61,8 @@ object OpCode extends ChiselEnum {
 
     val iValue = (((value << registersWidth) | registerA) << OpCode.getWidth) | instructionCode
 
+    println(s"Encode 1C $iValue")
+
     iValue.U
   }
 
