@@ -14,6 +14,8 @@ class ControlUnitBundle(registersWidth: Int, width: Int) extends Bundle {
   val branchZero: Bool = Bool()
   val branchNZero: Bool = Bool()
   val branchRelative: Bool = Bool()
+  val memoryWrite: Bool = Bool()
+  val memoryRead: Bool = Bool()
 
   val constant: UInt = UInt(width.W)
   val regBConstant: Bool = Bool()
@@ -34,6 +36,8 @@ object ControlUnitBundle {
     w.branchNZero := false.B
     w.branchRelative := false.B
     w.aluOp := AluCode.noop
+    w.memoryWrite := false.B
+    w.memoryRead := false.B
 
     w
   }
@@ -61,11 +65,13 @@ class PipelinedControlUnit(registersCount: Int, width: Int, debug: Boolean = fal
     val portWriteE = Output(Bool())
     val pcWriteE = Output(Bool())
     val pcWriteRelativeE = Output(Bool())
+    val memWriteE = Output(Bool())
+    val memReadE = Output(Bool())
   })
 
-  private val controlUnit = Module(new DecodeUnit(registersCount, width, false))
+  private val controlUnit = Module(new DecodeUnit(registersCount, width, debug))
   private val stages = RegInit(VecInit(Seq.fill(3) { ControlUnitBundle.wire(registersWidth, width) }))
-  private val prevZero = RegNext(io.zero)
+  private val prevZero = io.zero
   private val flush = Wire(Bool())
 
   for (i <- 0 until stages.length - 1) {
@@ -80,10 +86,12 @@ class PipelinedControlUnit(registersCount: Int, width: Int, debug: Boolean = fal
   io.aluOp := stages(1).aluOp
   io.constant := stages(1).constant
   io.regBConstant := stages(1).regBConstant
+  io.memWriteE := stages(1).memoryWrite
 
   io.regWrite := stages(2).regWrite
   io.regWriteE := stages(2).regWriteE
   io.portWriteE := stages(2).portWriteE
+  io.memReadE := stages(2).memoryRead
 
   io.loopBackA0 := stages(1).regReadA === stages(2).regWrite && stages(2).regWriteE === true.B
   io.loopBackB0 := stages(1).regReadB === stages(2).regWrite && stages(2).regWriteE === true.B

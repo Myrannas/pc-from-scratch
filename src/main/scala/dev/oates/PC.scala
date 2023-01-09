@@ -26,6 +26,6 @@ class PC(val width: Int, val debug: Boolean = false) extends Module {
   io.out := register
 
   if (debug) {
-    printf(p"\nPC: [${Hexadecimal(io.out)}]\n Next: [${Hexadecimal(nextPc)}]\n")
+    printf(p"PC: [${Hexadecimal(io.out)}]\n Next: [${Hexadecimal(nextPc)}]\n")
   }
 }

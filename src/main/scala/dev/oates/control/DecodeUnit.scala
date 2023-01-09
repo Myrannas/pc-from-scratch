@@ -44,6 +44,8 @@ class DecodeUnit(registers: Int, width: Int, debug: Boolean = false)
   io.decoded.branchNZero:= false.B
   io.decoded.branchZero := false.B
   io.decoded.branchRelative := false.B
+  io.decoded.memoryWrite := false.B
+  io.decoded.memoryRead := false.B
 
   switch(OpCode(op.asUInt)) {
     is(OpCode.add) {
@@ -56,7 +58,7 @@ class DecodeUnit(registers: Int, width: Int, debug: Boolean = false)
       io.decoded.aluOp := AluCode.sub
     }
 
-    is(OpCode.load) {
+    is(OpCode.constant) {
       io.decoded.regWriteE := true.B
       io.decoded.aluOp := AluCode.noop
       io.decoded.regBConstant := true.B
@@ -121,6 +123,15 @@ class DecodeUnit(registers: Int, width: Int, debug: Boolean = false)
       io.decoded.branchRelative := true.B
 
       io.decoded.constant := Cat(Seq(regB, regA, regC)).extendSign(width)
+    }
+
+    is(OpCode.load) {
+      io.decoded.regWriteE := true.B
+      io.decoded.memoryRead := true.B
+    }
+
+    is(OpCode.store) {
+      io.decoded.memoryWrite := true.B
     }
   }
 

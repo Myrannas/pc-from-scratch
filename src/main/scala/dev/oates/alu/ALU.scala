@@ -16,9 +16,8 @@ class ALU(width: Int, debug: Boolean = false) extends Module {
     val zero = Output(Bool())
   })
 
-  val result = Wire(UInt(width.W))
-
-  var inB = Mux(
+  private val result = Wire(UInt(width.W))
+  private val inB = Mux(
     io.constant === true.B,
     io.inC,
     io.inB
@@ -38,12 +37,12 @@ class ALU(width: Int, debug: Boolean = false) extends Module {
     )
   )
 
-  io.out := result
-  io.zero := result === 0.U
+  io.out := RegNext(result)
+  io.zero := RegNext(result === 0.U)
 
   if (debug) {
     printf(
       p"ALU op [${Hexadecimal(io.op.asUInt)}] inA [${Hexadecimal(io.inA)}] inB [${Hexadecimal(
-        io.inB)}] out [${Hexadecimal(io.out)}]\n")
+        inB)}] out [${Hexadecimal(io.out)}]\n")
   }
 }

@@ -14,12 +14,14 @@ object Main extends App {
         debug = false,
         "program", { cpu =>
           new Parser(cpu).compile("""
-            | load r1 5
+            | r1 = 5
+            | r3 = 2
             |
-            | start:
-            | add r2 r2 r1
-            | out o1 r2
-            | jump start
+            | r2 = r2 + r1
+            | [r3] = r2
+            | r0 = [r3]
+            | o1 = r0
+            |
             |""".stripMargin.trim)
         }
       ),

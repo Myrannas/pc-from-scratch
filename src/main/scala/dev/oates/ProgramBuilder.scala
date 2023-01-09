@@ -120,11 +120,32 @@ case class ProgramBuilder(registerWidth: Int,
   def load(register: Int, value: Int): ProgramBuilder = {
     ProgramBuilder(registerWidth,
                    instructions :+ OpCode.encode1C(registerWidth,
-                                                   OpCode.load,
+                                                   OpCode.constant,
                                                    register,
                                                    value),
                    labels,
                    linkTasks)
+  }
+
+  def loadAddr(destination: Int, addressRegister: Int): ProgramBuilder = {
+    ProgramBuilder(registerWidth,
+      instructions :+ OpCode.encode2(registerWidth,
+        OpCode.load,
+        destination,
+        addressRegister),
+      labels,
+      linkTasks)
+  }
+
+  def storeAddr(destination: Int, addressRegister: Int): ProgramBuilder = {
+    ProgramBuilder(registerWidth,
+      instructions :+ OpCode.encode3(registerWidth,
+        OpCode.store,
+        0,
+        addressRegister,
+        destination),
+      labels,
+      linkTasks)
   }
 
   def label(label: String): ProgramBuilder = {

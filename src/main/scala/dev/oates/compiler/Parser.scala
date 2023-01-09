@@ -36,6 +36,23 @@ class Parser(programBuilder: ProgramBuilder) {
             programBuilder.load(r, v)
       })
 
+  private def parseStoreAddr[_: P] =
+    P("[" ~ parseReg ~ "]" ~ "=" ~ parseReg)
+      .map({
+        case (r, v) =>
+          (programBuilder: ProgramBuilder) =>
+            programBuilder.storeAddr(r, v)
+      })
+
+  private def parseLoadAddr[_: P] =
+    P(parseReg ~ "=" ~ "[" ~ parseReg ~ "]")
+      .map({
+        case (r, v) =>
+          (programBuilder: ProgramBuilder) =>
+            programBuilder.loadAddr(r, v)
+      })
+
+
   private def parseOperator[_: P] = P(("+" | "-" | "&" | "|").!).map({
     operator => (programBuilder: ProgramBuilder) => {
           operator match {
@@ -79,7 +96,7 @@ class Parser(programBuilder: ProgramBuilder) {
       })
 
   private def parseStatement[_: P] =
-    P(parseLoad | parseOperation | parseOut | parseJump | parseLabel)
+    P(parseLoadAddr | parseLoad | parseStoreAddr | parseOperation | parseOut | parseJump | parseLabel)
 
   private def parseProgram[_: P] = P(parseStatement.rep(1) ~ End)
 

@@ -5,6 +5,7 @@ import chisel3._
 import chisel3.util.experimental.loadMemoryFromFileInline
 import dev.oates.alu.ALU
 import dev.oates.control.{DecodeUnit, OpCode, PipelinedControlUnit}
+import dev.oates.memory.Memory
 
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Paths}
@@ -19,6 +20,10 @@ class CPU(
   require(ports <= registerCount,
           "The number of ports must be less than the number of registers")
 
+  if (debug) {
+    printf("---------------------------\n");
+  }
+
   val io = IO(new Bundle {
     val outputPorts = Output(Vec(ports, UInt(width.W)))
   })
@@ -28,6 +33,7 @@ class CPU(
   private val alu = Module(new ALU(width, debug))
   private val outputPorts = Module(new Ports(ports, width))
   private val pc = Module(new PC(width, true))
+  private val memory = Module(new Memory(width, true))
 
   private val instructions =
     Mem(1024, UInt((OpCode.getWidth + log2Ceil(registerCount) * 3).W))
@@ -35,33 +41,49 @@ class CPU(
     loadMemoryFromFileInline(instructions, memoryFile)
   }
 
-  // ALU Input
-  alu.io.inA := Mux(control.io.loopBackA0, RegNext(alu.io.out), RegNext(registers.io.outA))
-  alu.io.inB := Mux(control.io.loopBackB0, RegNext(alu.io.out), RegNext(registers.io.outB))
-  alu.io.inC := control.io.constant
-  alu.io.op := control.io.aluOp
-  alu.io.constant := control.io.regBConstant
-
-  // Control Unit Input
+  // Stage 1
+  // Decode
   control.io.instruction := instructions(pc.io.out)
-  control.io.zero := alu.io.zero
 
-  // Output Ports
-  outputPorts.io.writeValue := RegNext(alu.io.out)
-  outputPorts.io.writeE := control.io.portWriteE
-  outputPorts.io.writePortSelect := control.io.regWrite
-
-  //Registers Input
-  registers.io.in := RegNext(alu.io.out)
+  // Stage 2
+  // Register Selection
   registers.io.outSelectA := control.io.regReadA
   registers.io.outSelectB := control.io.regReadB
   registers.io.inSelect := control.io.regWrite
+  registers.io.loopbackA := control.io.loopBackA0
+  registers.io.loopbackB := control.io.loopBackB0
+
+  // Stage 3
+  // ALU inputs
+  alu.io.inA := registers.io.outA
+  alu.io.inB := registers.io.outB
+  alu.io.inC := control.io.constant
+  alu.io.op := control.io.aluOp
+  alu.io.constant := control.io.regBConstant
+  control.io.zero := alu.io.zero
+
+  // Memory inputs
+  memory.io.readAddress := registers.io.outB
+
+  // Stage 4
+  // Write outputs
+  outputPorts.io.writeValue := alu.io.out
+  outputPorts.io.writeE := control.io.portWriteE
+  outputPorts.io.writePortSelect := control.io.regWrite
+
+  // Write registers
+  registers.io.in := Mux(control.io.memReadE, memory.io.readData, alu.io.out)
   registers.io.write := control.io.regWriteE
 
-  // PC
+  // Write PC
   pc.io.write := control.io.pcWriteE
   pc.io.in := control.io.constant
   pc.io.writeRelative := control.io.pcWriteRelativeE
+
+  // Write Memory
+  memory.io.writeAddress := registers.io.outB
+  memory.io.writeData := registers.io.outA
+  memory.io.write := control.io.memWriteE
 
   // Outputs
   io.outputPorts := outputPorts.io.outputPorts

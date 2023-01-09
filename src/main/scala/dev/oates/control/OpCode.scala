@@ -5,7 +5,7 @@ import chisel3.experimental.ChiselEnum
 
 object OpCode extends ChiselEnum {
   val noop: OpCode.Type = Value(0.U)
-  val load: OpCode.Type = Value(1.U)
+  val constant: OpCode.Type = Value(1.U)
   val add: OpCode.Type = Value(2.U)
   val sub: OpCode.Type = Value(3.U)
   val output: OpCode.Type = Value(4.U)
@@ -16,6 +16,8 @@ object OpCode extends ChiselEnum {
   val xor: OpCode.Type = Value(9.U)
   val bz: OpCode.Type = Value(10.U)
   val bnz: OpCode.Type = Value(11.U)
+  val load: OpCode.Type = Value(12.U)
+  val store: OpCode.Type = Value(13.U)
 
   def encode3(registersWidth: Int,
               instruction: OpCode.Type,
@@ -30,6 +32,8 @@ object OpCode extends ChiselEnum {
     require(registerC < maxRegisterValue, s"registerC > than allowed value of $maxRegisterValue")
 
     val iValue = (((((registerC << registersWidth) | registerB) << registersWidth) | registerA) << OpCode.getWidth) | instructionCode
+
+    println(s"Encode 3 $iValue")
 
     iValue.U
   }

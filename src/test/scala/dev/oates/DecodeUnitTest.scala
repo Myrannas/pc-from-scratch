@@ -63,7 +63,7 @@ class DecodeUnitTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "OpCode.load: Set the noop op for the ALU and write to correct register" in {
     test(new DecodeUnit(registers, width)) {
       c =>
-        c.io.instruction.poke(encode1C(OpCode.load, 1, 2))
+        c.io.instruction.poke(encode1C(OpCode.constant, 1, 2))
         c.io.decoded.aluOp.expect(AluCode.noop)
         c.io.decoded.regWriteE.expect(true.B)
         c.io.decoded.portWriteE.expect(false.B)
@@ -127,6 +127,18 @@ class DecodeUnitTest extends AnyFlatSpec with ChiselScalatestTester {
         c.io.decoded.aluOp.expect(AluCode.add)
         c.io.decoded.constant.expect(((1 << width) - 1).asUInt)
         c.io.decoded.branchNZero.expect(true.B)
+    }
+  }
+
+  it should "Opcode.store: Correctly decodes a load instruction" in {
+    test(new DecodeUnit(registers, width, true)) {
+      c =>
+        c.io.instruction.poke(encode3(OpCode.store, 0, 1, 0))
+        c.io.decoded.aluOp.expect(AluCode.noop)
+        c.io.decoded.memoryWrite.expect(true.B)
+        c.io.decoded.regWrite.expect(0)
+        c.io.decoded.regReadB.expect(0)
+        c.io.decoded.regReadA.expect(1)
     }
   }
 }
