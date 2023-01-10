@@ -7,6 +7,7 @@ class ROM(width: Int, size: Int, memoryFile: String) extends Module {
   val io = IO(new Bundle {
     val address = Input(UInt(10.W))
     val data = Output(UInt(32.W))
+    val readEnabled = Input(Bool())
   })
 
   private val instructions = SyncReadMem(size, UInt(width.W))
@@ -14,5 +15,5 @@ class ROM(width: Int, size: Int, memoryFile: String) extends Module {
     loadMemoryFromFileInline(instructions, memoryFile)
   }
 
-  io.data := instructions.read(io.address)
+  io.data := instructions.read(io.address, io.readEnabled)
 }

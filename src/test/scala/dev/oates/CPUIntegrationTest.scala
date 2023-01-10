@@ -12,6 +12,7 @@ class CPUIntegrationTest extends AnyFlatSpec with ChiselScalatestTester {
     test(
       CPU
         .builder()
+        .withDebugging()
         .withProgram(
           """
             | r0 = 5
@@ -20,7 +21,7 @@ class CPUIntegrationTest extends AnyFlatSpec with ChiselScalatestTester {
             |""".stripMargin.trim
         )
         .build()) { c =>
-      c.clock.step(8)
+      c.clock.step(9)
       c.io.outputPorts(1).expect(10.U)
     }
   }
@@ -37,7 +38,7 @@ class CPUIntegrationTest extends AnyFlatSpec with ChiselScalatestTester {
             | o1 = r2
             |""".stripMargin.trim)
         .build()) { c =>
-      c.clock.step(8)
+      c.clock.step(10)
       c.io.outputPorts(1).expect(2.U)
     }
   }
@@ -53,7 +54,7 @@ class CPUIntegrationTest extends AnyFlatSpec with ChiselScalatestTester {
             | o1 = r1
             |""".stripMargin.trim)
         .build()) { c =>
-      c.clock.step(8)
+      c.clock.step(11)
       c.io.outputPorts(1).expect(15.U)
     }
   }
@@ -71,7 +72,7 @@ class CPUIntegrationTest extends AnyFlatSpec with ChiselScalatestTester {
             | jump start
             |""".stripMargin.trim)
         .build()) { c =>
-      c.clock.step(19)
+      c.clock.step(23)
       c.io.outputPorts(1).expect(15.U)
     }
   }
@@ -91,7 +92,7 @@ class CPUIntegrationTest extends AnyFlatSpec with ChiselScalatestTester {
             | o2 = r0
             |""".stripMargin.trim)
         .build()) { c =>
-      c.clock.step(10)
+      c.clock.step(12)
       c.io.outputPorts(1).expect(0.U)
       c.io.outputPorts(2).expect(1.U)
     }
@@ -111,7 +112,7 @@ class CPUIntegrationTest extends AnyFlatSpec with ChiselScalatestTester {
             | o1 = r2
             |""".stripMargin.trim)
         .build()) { c =>
-      c.clock.step(10)
+      c.clock.step(15)
       c.io.outputPorts(1).expect(13.U)
     }
   }
@@ -135,7 +136,7 @@ class CPUIntegrationTest extends AnyFlatSpec with ChiselScalatestTester {
         |""".stripMargin.trim
         )
         .build()) { c =>
-      c.clock.step(11)
+      c.clock.step(15)
       c.io.outputPorts(1).expect(2.U)
     }
   }

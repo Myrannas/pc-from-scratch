@@ -7,6 +7,7 @@ class PC(val width: Int, val debug: Boolean = false) extends Module {
     val in = Input(UInt(width.W))
     val out = Output(UInt(width.W))
     val write = Input(Bool())
+    val stall = Input(Bool())
     val writeRelative = Input(Bool())
     val writeRelativeAddr = Input(UInt(width.W))
   })
@@ -19,9 +20,11 @@ class PC(val width: Int, val debug: Boolean = false) extends Module {
   }.elsewhen(io.write && !io.writeRelative) {
       nextPc := io.in
     }
-    .otherwise {
+    .elsewhen(!io.stall) {
       nextPc := register + 1.U
-    }
+    } otherwise {
+    nextPc := register
+  }
 
   register := nextPc
   io.out := register

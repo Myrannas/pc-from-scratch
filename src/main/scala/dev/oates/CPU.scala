@@ -45,7 +45,9 @@ class CPU(
 
   // Stage 1
   // Instruction Fetch
+  pc.io.stall := control.io.stall
   instructions.io.address := pc.io.out
+  instructions.io.readEnabled := !control.io.stall
 
   // Stage 2 - Decode
   control.io.instruction := instructions.io.data
@@ -56,8 +58,6 @@ class CPU(
   registers.io.outSelectA := control.io.regReadA
   registers.io.outSelectB := control.io.regReadB
   registers.io.inSelect := control.io.regWrite
-  registers.io.loopbackA := control.io.loopBackA0
-  registers.io.loopbackB := control.io.loopBackB0
 
   // Stage 4
   // ALU inputs

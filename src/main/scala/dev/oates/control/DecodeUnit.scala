@@ -46,6 +46,8 @@ class DecodeUnit(registers: Int, width: Int, debug: Boolean = false)
   io.decoded.regReadA := regA
   io.decoded.regReadB := regB
 
+  io.decoded.regReadAE := false.B
+  io.decoded.regReadBE := false.B
   io.decoded.portWriteE := false.B
   io.decoded.regWriteE := false.B
   io.decoded.constant := Cat(Seq(regB, regA))
@@ -63,11 +65,15 @@ class DecodeUnit(registers: Int, width: Int, debug: Boolean = false)
     is(OpCode.add) {
       io.decoded.regWriteE := true.B
       io.decoded.aluOp := AluCode.add
+      io.decoded.regReadAE := true.B
+      io.decoded.regReadBE := true.B
     }
 
     is(OpCode.sub) {
       io.decoded.regWriteE := true.B
       io.decoded.aluOp := AluCode.sub
+      io.decoded.regReadAE := true.B
+      io.decoded.regReadBE := true.B
     }
 
     is(OpCode.constant) {
@@ -79,26 +85,34 @@ class DecodeUnit(registers: Int, width: Int, debug: Boolean = false)
     is(OpCode.xor) {
       io.decoded.regWriteE := true.B
       io.decoded.aluOp := AluCode.xor
+      io.decoded.regReadAE := true.B
+      io.decoded.regReadBE := true.B
     }
 
     is(OpCode.not) {
       io.decoded.regWriteE := true.B
       io.decoded.aluOp := AluCode.not
+      io.decoded.regReadAE := true.B
     }
 
     is(OpCode.and) {
       io.decoded.regWriteE := true.B
       io.decoded.aluOp := AluCode.and
+      io.decoded.regReadAE := true.B
+      io.decoded.regReadBE := true.B
     }
 
     is(OpCode.or) {
       io.decoded.regWriteE := true.B
       io.decoded.aluOp := AluCode.or
+      io.decoded.regReadAE := true.B
+      io.decoded.regReadBE := true.B
     }
 
     is(OpCode.output) {
       io.decoded.portWriteE := true.B
       io.decoded.aluOp := AluCode.a
+      io.decoded.regReadAE := true.B
     }
 
     is(OpCode.jumpC) {
@@ -145,6 +159,8 @@ class DecodeUnit(registers: Int, width: Int, debug: Boolean = false)
 
     is(OpCode.store) {
       io.decoded.memoryWrite := true.B
+      io.decoded.regReadAE := true.B
+      io.decoded.regReadBE := true.B
     }
   }
 

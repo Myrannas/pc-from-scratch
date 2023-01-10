@@ -16,17 +16,14 @@ class Registers(count: Int, width: Int, debug: Boolean = false) extends Module {
     val write: Bool = Input(Bool())
     val outSelectA: UInt = Input(UInt(log2Ceil(count).W))
     val outSelectB: UInt = Input(UInt(log2Ceil(count).W))
-
-    val loopbackA: Bool = Input(Bool())
-    val loopbackB: Bool = Input(Bool())
   })
 
   private val registers = RegInit(VecInit(Seq.fill(count)(0.U(width.W))))
   private val outA = Wire(UInt(width.W))
   private val outB = Wire(UInt(width.W))
 
-  io.outA := Mux(io.loopbackA, io.in, RegNext(outA))
-  io.outB := Mux(io.loopbackB, io.in, RegNext(outB))
+  io.outA := RegNext(outA)
+  io.outB := RegNext(outB)
 
   when(io.write === true.B && io.inSelect === io.outSelectA) {
     outA := io.in
@@ -50,9 +47,10 @@ class Registers(count: Int, width: Int, debug: Boolean = false) extends Module {
     for (i <- 0 until registers.length) {
       printf(p"\tRegister $i: ${registers(i)}\n")
     }
-    printf(p"\tOutputs [${io.outSelectA}]: ${io.outA} [${io.outSelectB}]: ${io.outB}\n")
+    printf(
+      p"\tOutputs [${io.outSelectA}]: ${io.outA} [${io.outSelectB}]: ${io.outB}\n")
 
-    when (io.write) {
+    when(io.write) {
       printf(p"\tInputs [${io.inSelect}]: ${io.in}\n")
     }
   }
