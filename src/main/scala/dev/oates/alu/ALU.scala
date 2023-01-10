@@ -38,7 +38,7 @@ class ALU(width: Int, debug: Boolean = false) extends Module {
   )
 
   io.out := RegNext(result)
-  io.zero := RegNext(result === 0.U)
+  io.zero := io.out === 0.U
 
   if (debug) {
     printf(

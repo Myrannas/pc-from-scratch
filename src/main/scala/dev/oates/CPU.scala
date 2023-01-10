@@ -51,7 +51,7 @@ class CPU(
 
   // Stage 2 - Decode
   control.io.instruction := instructions.io.data
-  control.io.pc := RegNext(pc.io.out)
+  control.io.pc := pc.io.out
 
   // Stage 3
   // Register Selection

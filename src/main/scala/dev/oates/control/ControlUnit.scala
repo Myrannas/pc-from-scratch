@@ -138,35 +138,27 @@ class PipelinedControlUnit(registersCount: Int,
   private val prevZero = io.zero
   private val flush = Wire(Bool())
 
-  for (i <- 0 until stages.length - 1) {
-    stages(i + 1) := stages(i).flush(flush)
-  }
+  private val isStalledFromRegisterA = stages(0).regReadAE && stages(1).regWriteE && stages(
+    1).regWrite === stages(0).regReadA
+  private val isStalledFromRegisterB = stages(0).regReadBE && stages(1).regWriteE && stages(
+    1).regWrite === stages(0).regReadB
+  private val isStalling = Wire(Bool())
+  private val wasStalling = RegNext(isStalling)
+  isStalling := (isStalledFromRegisterA | isStalledFromRegisterB) & !wasStalling
+  io.stall := isStalling
 
   // Pipeline stage 2 - decode
   decoder.io.instruction := io.instruction
-  decoder.io.pc := io.pc
-
-  private val isStalledFromRegisterA = decoder.io.decoded.regReadAE && stages(0).regWriteE && stages(
-    0).regWrite === decoder.io.decoded.regReadA
-  private val isStalledFromRegisterB = decoder.io.decoded.regReadBE && stages(0).regWriteE && stages(
-    0).regWrite === decoder.io.decoded.regReadB
-  private val isStalling = RegInit(false.B)
-
-  when(isStalledFromRegisterA || isStalledFromRegisterB && !isStalling) {
-    stages(0) := ControlUnitBundle.wire(registersWidth, width)
-    isStalling := true.B
-    io.stall := true.B
-
-    if (debug) {
-      printf(
-        p"Stalling pipeline. ${Binary(isStalledFromRegisterA)} $isStalledFromRegisterB\n")
-    }
-
-  } otherwise {
-    stages(0) := decoder.io.decoded
-    isStalling := false.B
-    io.stall := false.B
+  private val nextPc = Reg(UInt(width.W))
+  when(!isStalling) {
+    nextPc := io.pc
   }
+
+  decoder.io.pc := nextPc
+
+  stages(0) := Mux(isStalling, stages(0), decoder.io.decoded)
+  stages(1) := stages(0).flush(flush || isStalling)
+  stages(2) := stages(1).flush(flush)
 
   // Pipeline stage 3 - register fetch
   io.regReadA := stages(0).regReadA
