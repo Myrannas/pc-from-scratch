@@ -22,15 +22,25 @@ class DecodeUnit(registers: Int, width: Int, debug: Boolean = false)
   private val pcRegister = (registers - 1).U
 
   var io = IO(new Bundle {
-    val instruction: Bits = Input(Bits((OpCode.getWidth + registersWidth * 3).W))
+    val instruction: Bits =
+      Input(Bits((OpCode.getWidth + registersWidth * 3).W))
 
-    val decoded: ControlUnitBundle = Output(new ControlUnitBundle(registersWidth, width))
+    val pc = Input(UInt(width.W))
+
+    val decoded: ControlUnitBundle =
+      Output(new ControlUnitBundle(registersWidth, width))
   })
 
   private val zeroN = Reg(Bool())
   val Seq(
-  regB, regA, regC, op
-    ) = io.instruction.split(registersWidth, registersWidth, registersWidth, opsWidth)
+    regB,
+    regA,
+    regC,
+    op
+  ) = io.instruction.split(registersWidth,
+                           registersWidth,
+                           registersWidth,
+                           opsWidth)
 
   io.decoded.regWrite := regC
   io.decoded.regReadA := regA
@@ -41,11 +51,13 @@ class DecodeUnit(registers: Int, width: Int, debug: Boolean = false)
   io.decoded.constant := Cat(Seq(regB, regA))
   io.decoded.aluOp := AluCode.noop
   io.decoded.regBConstant := false.B
-  io.decoded.branchNZero:= false.B
+  io.decoded.branchNZero := false.B
   io.decoded.branchZero := false.B
   io.decoded.branchRelative := false.B
   io.decoded.memoryWrite := false.B
   io.decoded.memoryRead := false.B
+  io.decoded.flushed := false.B
+  io.decoded.pc := io.pc
 
   switch(OpCode(op.asUInt)) {
     is(OpCode.add) {
@@ -98,7 +110,8 @@ class DecodeUnit(registers: Int, width: Int, debug: Boolean = false)
       io.decoded.branchNZero := true.B
       io.decoded.branchRelative := false.B
 
-      io.decoded.constant := Cat(Seq(io.decoded.regReadB, io.decoded.regReadA, regC))
+      io.decoded.constant := Cat(
+        Seq(io.decoded.regReadB, io.decoded.regReadA, regC))
     }
 
     is(OpCode.bz) {
@@ -136,12 +149,12 @@ class DecodeUnit(registers: Int, width: Int, debug: Boolean = false)
   }
 
   if (debug) {
-    printf(p"instruction [${Hexadecimal(io.instruction)}]\n" +
-      p"op [$op] constant [${Hexadecimal(io.decoded.constant)}] " +
-      p"regs [${Hexadecimal(regA)}, ${Hexadecimal(regB)}, ${Hexadecimal(regC)}] \n" +
-      p"flags [Z ${Binary(zeroN)}, RWE ${Binary(io.decoded.regWriteE)}, PWE ${Binary(
-        io.decoded.portWriteE)} RBC ${Binary(io.decoded.regBConstant)} BZ ${Binary(io.decoded.branchZero)} BNZ ${Binary(io.decoded.branchNZero)}]\n")
+    printf(
+      p"instruction [${Hexadecimal(io.instruction)}]\n" +
+        p"op [$op] constant [${Hexadecimal(io.decoded.constant)}] " +
+        p"regs [${Hexadecimal(regA)}, ${Hexadecimal(regB)}, ${Hexadecimal(regC)}] \n" +
+        p"flags [Z ${Binary(zeroN)}, RWE ${Binary(io.decoded.regWriteE)}, PWE ${Binary(
+          io.decoded.portWriteE)} RBC ${Binary(io.decoded.regBConstant)} BZ ${Binary(
+          io.decoded.branchZero)} BNZ ${Binary(io.decoded.branchNZero)}]\n")
   }
 }
-
-

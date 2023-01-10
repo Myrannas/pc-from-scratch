@@ -2,9 +2,10 @@ package dev.oates.memory
 
 import chisel3._
 
-class Memory(width: Int, debug: Boolean = false) extends Module {
-  val memory: SyncReadMem[UInt] = SyncReadMem(
-    1000,
+class Memory(dataMemory: Int, width: Int, debug: Boolean = false)
+    extends Module {
+  private val memory: SyncReadMem[UInt] = SyncReadMem(
+    dataMemory,
     UInt(width.W)
   )
 
@@ -21,13 +22,15 @@ class Memory(width: Int, debug: Boolean = false) extends Module {
     memory.write(io.writeAddress, io.writeData)
 
     if (debug) {
-      printf(p"Memory write [${Hexadecimal(io.writeData)}] to [${Hexadecimal(io.writeAddress)}]\n")
+      printf(
+        p"Memory write [${Hexadecimal(io.writeData)}] to [${Hexadecimal(io.writeAddress)}]\n")
     }
   }
 
   io.readData := memory.read(io.readAddress)
 
   if (debug) {
-    printf(p"Memory read [${Hexadecimal(io.readData)}] from [${Hexadecimal(io.readAddress)}]\n")
+    printf(
+      p"Memory read [${Hexadecimal(io.readData)}] from [${Hexadecimal(io.readAddress)}]\n")
   }
 }

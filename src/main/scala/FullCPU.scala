@@ -1,19 +1,20 @@
-import chisel3._
 import chisel3.stage.ChiselStage
-import dev.oates.control.{DecodeUnit, OpCode}
-import dev.oates.CPU
-import dev.oates.compiler.Parser
+import dev.oates.{CPU, CPUTarget}
 
 object Main extends App {
   println(
     new ChiselStage().emitVerilog(
-      CPU.program(
-        16,
-        16,
-        4,
-        debug = false,
-        "program", { cpu =>
-          new Parser(cpu).compile("""
+      CPU
+        .builder()
+        .withRegisters(16)
+        .withWidth(16)
+        .withPorts(1)
+        .withDataMemory(1024)
+        .withInstructionMemory(1024)
+        .withTarget(CPUTarget.FPGA)
+        .withProgram(
+          name = Some("test"),
+          program = """
             | r1 = 5
             | r3 = 2
             |
@@ -22,12 +23,14 @@ object Main extends App {
             | r0 = [r3]
             | o1 = r0
             |
-            |""".stripMargin.trim)
-        }
-      ),
+            |""".stripMargin.trim
+        )
+        .build(),
       Array(
         "--emission-options=disableMemRandomization,disableRegisterRandomization",
-        "--target-dir=./out"
+        "--target:fpga",
+        "--target-dir=./out",
+        "--emit-modules=verilog"
       )
     )
   )

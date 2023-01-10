@@ -9,62 +9,60 @@ class CPUIntegrationTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior of "CPU"
 
   it should "Can add values" in {
-    test(CPU.program(4, 16, 4, true, "sub", {
-      cpu =>
-        new Parser(cpu).compile(
+    test(
+      CPU
+        .builder()
+        .withProgram(
           """
             | r0 = 5
             | r1 = r0 + r0
             | o1 = r1
-            |""".stripMargin.trim)
-    })) {
-      c =>
-        c.clock.step(8)
-        c.io.outputPorts(1).expect(10.U)
+            |""".stripMargin.trim
+        )
+        .build()) { c =>
+      c.clock.step(8)
+      c.io.outputPorts(1).expect(10.U)
     }
   }
 
   it should "Can subtract values" in {
-    test(CPU.program(4, 16, 4, true, "sub", {
-      cpu =>
-        new Parser(cpu).compile(
-          """
+    test(
+      CPU
+        .builder()
+        .withProgram("""
             | r0 = 5
             | r1 = 3
             |
             | r2 = r0 - r1
             | o1 = r2
             |""".stripMargin.trim)
-    })) {
-      c =>
-        c.clock.step(8)
-        c.io.outputPorts(1).expect(2.U)
+        .build()) { c =>
+      c.clock.step(8)
+      c.io.outputPorts(1).expect(2.U)
     }
   }
 
   it should "Can use the result of a previous computation immediately" in {
-    test(CPU.program(4, 16, 4, true, "sub", {
-      cpu =>
-        new Parser(cpu).compile(
-          """
+    test(
+      CPU
+        .builder()
+        .withProgram("""
             | r0 = 5
             | r1 = r0 + r0
             | r1 = r1 + r0
             | o1 = r1
             |""".stripMargin.trim)
-    })) {
-      c =>
-        c.clock.step(8)
-        c.io.outputPorts(1).expect(15.U)
+        .build()) { c =>
+      c.clock.step(8)
+      c.io.outputPorts(1).expect(15.U)
     }
   }
 
-
   it should "adjust the PC when encountering a loop" in {
-    test(CPU.program(4, 16, 4, true, "loop", {
-      cpu =>
-        new Parser(cpu).compile(
-          """
+    test(
+      CPU
+        .builder()
+        .withProgram("""
             | r1 = 5
             |
             | start:
@@ -72,18 +70,17 @@ class CPUIntegrationTest extends AnyFlatSpec with ChiselScalatestTester {
             | o1 = r2
             | jump start
             |""".stripMargin.trim)
-    })) {
-      c =>
-        c.clock.step(18)
-        c.io.outputPorts(1).expect(15.U)
+        .build()) { c =>
+      c.clock.step(19)
+      c.io.outputPorts(1).expect(15.U)
     }
   }
 
   it should "Set branch on zero if bz is set" in {
-    test(CPU.program(4, 16, 4, true, "branch", {
-      cpu =>
-        new Parser(cpu).compile(
-          """
+    test(
+      CPU
+        .builder()
+        .withProgram("""
             | r0 = 1
             | r1 = 0
             |
@@ -93,19 +90,18 @@ class CPUIntegrationTest extends AnyFlatSpec with ChiselScalatestTester {
             | end:
             | o2 = r0
             |""".stripMargin.trim)
-    })) {
-      c =>
-        c.clock.step(10)
-        c.io.outputPorts(1).expect(0.U)
-        c.io.outputPorts(2).expect(1.U)
+        .build()) { c =>
+      c.clock.step(10)
+      c.io.outputPorts(1).expect(0.U)
+      c.io.outputPorts(2).expect(1.U)
     }
   }
 
   it should "allow reading and writing memory" in {
-    test(CPU.program(4, 16, 4, true, "branch", {
-      cpu =>
-        new Parser(cpu).compile(
-          """
+    test(
+      CPU
+        .builder()
+        .withProgram("""
             | r0 = 5
             | r1 = 13
             |
@@ -114,32 +110,33 @@ class CPUIntegrationTest extends AnyFlatSpec with ChiselScalatestTester {
             |
             | o1 = r2
             |""".stripMargin.trim)
-    })) {
-      c =>
-        c.clock.step(10)
-        c.io.outputPorts(1).expect(13.U)
+        .build()) { c =>
+      c.clock.step(10)
+      c.io.outputPorts(1).expect(13.U)
     }
   }
 
   it should "can write and read at the same time" in {
-    test(CPU.program(4, 16, 4, true, "branch", {
-      cpu =>
-        new Parser(cpu).compile(
+    test(
+      CPU
+        .builder()
+        .withDebugging()
+        .withProgram(
           """
-            | r0 = 1
-            | r1 = 2
-            | r2 = 3
-            |
-            | [r0] = r1
-            | r3 = [r0]
-            | [r0] = r2
-            |
-            | o1 = r3
-            |""".stripMargin.trim)
-    })) {
-      c =>
-        c.clock.step(10)
-        c.io.outputPorts(1).expect(2.U)
+        | r0 = 1
+        | r1 = 2
+        | r2 = 3
+        |
+        | [r0] = r1
+        | r3 = [r0]
+        | [r0] = r2
+        |
+        | o1 = r3
+        |""".stripMargin.trim
+        )
+        .build()) { c =>
+      c.clock.step(11)
+      c.io.outputPorts(1).expect(2.U)
     }
   }
 }
